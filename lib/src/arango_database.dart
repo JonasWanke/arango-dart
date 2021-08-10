@@ -10,6 +10,7 @@ import 'package:arango/src/arango_errors.dart';
 import 'package:arango/src/arango_helper.dart';
 import 'package:arango/src/collection/arango_document_collection.dart';
 import 'package:arango/src/collection/arango_edge_collection.dart';
+import 'package:arango/src/graph/arango_graph.dart';
 
 ArangoCollection _constructCollection(
   ArangoConnection connection,
@@ -302,6 +303,32 @@ class ArangoDatabase {
     final transactions = await listTransactions();
     return transactions
         .map((t) => ArangoTransaction(_connection, t['id']))
+        .toList();
+  }
+  //#endregion
+
+  //#region collections
+  ArangoGraph graph(String name) {
+    assert(_connection.arangoMajor >= 3);
+
+    return ArangoGraph(name, _connection);
+  }
+
+  Future<List<Map<String, dynamic>>> listGraphs() async {
+    assert(_connection.arangoMajor >= 3);
+
+    final response = await _connection.request(path: '/_api/gharial');
+    return (response.body['graphs'] as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<List<ArangoGraph>> graphs() async {
+    assert(_connection.arangoMajor >= 3);
+
+    final graphs = await listGraphs();
+    return graphs
+        .map((data) => ArangoGraph(data['name'] as String, _connection))
         .toList();
   }
   //#endregion

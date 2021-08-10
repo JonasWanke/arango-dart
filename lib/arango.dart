@@ -71,3 +71,5 @@ export 'src/arango_transaction.dart';
 export 'src/collection/arango_collection.dart';
 export 'src/collection/arango_document_collection.dart';
 export 'src/collection/arango_edge_collection.dart';
+export 'src/graph/arango_collections.dart';
+export 'src/graph/arango_graph.dart';
