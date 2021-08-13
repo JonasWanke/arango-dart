@@ -33,7 +33,7 @@ class ArangoQuery {
 
   String get _query => _lines.join('\n');
 
-  Future<List?> toList() async {
+  Future<List> toList() async {
     final cursor = await toCursor();
     return cursor.all();
   }
