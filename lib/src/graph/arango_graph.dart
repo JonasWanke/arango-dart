@@ -53,18 +53,33 @@ class ArangoGraph {
     return resp.body;
   }
 
-  Future<bool> exists() async {
+  Future<bool> doesExist() async {
     try {
       await get();
+      return true;
     } on ArangoError catch (e) {
-      const GRAPH_NOT_FOUND = 1924;
-      if (e.errorNum == GRAPH_NOT_FOUND) {
+      const graphNotFound = 1924;
+      if (e.errorNum == graphNotFound) {
         return false;
       } else {
         rethrow;
       }
     }
-    return true;
+  }
+
+  Future<void> ensureExists() async {
+    if (await doesExist()) return;
+
+    try {
+      await create();
+    } on ArangoError catch (e) {
+      const duplicateGraph = 1925;
+      if (e.errorNum == duplicateGraph) {
+        return;
+      } else {
+        rethrow;
+      }
+    }
   }
 
   Future<Map<String, dynamic>> drop({bool? dropCollections}) async {
@@ -91,31 +106,6 @@ class ArangoGraph {
             ArangoGraphVertexCollection(this, it as String, _connection))
         .toList();
   }
-
-  Future<Map<String, dynamic>> addVertexCollection(
-    ArangoGraphVertexCollection collection,
-  ) async {
-    final response = await _connection.request(
-      method: 'POST',
-      path: '/_api/gharial/$name/vertex',
-      body: {'collection': collection.name},
-    );
-    return response.body;
-  }
-
-  Future<Map<String, dynamic>> removeVertexCollection(
-    ArangoGraphVertexCollection collection, {
-    bool? dropCollection,
-  }) async {
-    final response = await _connection.request(
-      method: 'DELETE',
-      path: '/_api/gharial/$name/vertex/${collection.name}',
-      queries: {
-        if (dropCollection != null) 'dropCollection': dropCollection.toString(),
-      },
-    );
-    return response.body;
-  }
   //#endregion
 
   //#region Edge collections
@@ -129,53 +119,20 @@ class ArangoGraph {
         .map((it) => ArangoGraphEdgeCollection(this, it as String, _connection))
         .toList();
   }
-
-  Future<Map<String, dynamic>> addEdgeDefinition(
-    ArangoEdgeDefinition definition,
-  ) async {
-    final response = await _connection.request(
-      method: 'POST',
-      path: '/_api/gharial/$name/edge',
-      body: definition.toJson(),
-    );
-    return response.body;
-  }
-
-  Future<Map<String, dynamic>> replaceEdgeDefinition(
-    ArangoEdgeDefinition definition, {
-    bool? waitForSync,
-    bool? dropCollections,
-  }) async {
-    final response = await _connection.request(
-      method: 'PUT',
-      path: '/_api/gharial/$name/edge/${definition.collection.name}#definition',
-      queries: {
-        if (waitForSync != null) 'waitForSync': waitForSync.toString(),
-        if (dropCollections != null)
-          'dropCollections': dropCollections.toString(),
-      },
-      body: definition.toJson(),
-    );
-    return response.body;
-  }
-
-  Future<Map<String, dynamic>> removeEdgeDefinition(
-    String edgeDefinitionName, {
-    bool? waitForSync,
-    bool? dropCollections,
-  }) async {
-    final response = await _connection.request(
-      method: 'DELETE',
-      path: '/_api/gharial/$name/edge/$edgeDefinitionName#definition',
-      queries: {
-        if (waitForSync != null) 'waitForSync': waitForSync.toString(),
-        if (dropCollections != null)
-          'dropCollections': dropCollections.toString(),
-      },
-    );
-    return response.body;
-  }
   //#endregion
+
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (runtimeType == other.runtimeType &&
+            other is ArangoGraph &&
+            name == other.name &&
+            _connection == other._connection);
+  }
+
+  @override
+  int get hashCode =>
+      runtimeType.hashCode ^ name.hashCode ^ _connection.hashCode;
 }
 
 class ArangoEdgeDefinition {
