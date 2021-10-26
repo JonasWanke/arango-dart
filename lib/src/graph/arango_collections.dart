@@ -232,14 +232,20 @@ class ArangoGraphEdgeCollection extends ArangoGraphCollection {
     return response.body;
   }
 
-  Future<void> ensureCollectionExistsAndIsAddedToGraph(
-    ArangoEdgeDefinition definition,
-  ) async {
+  Future<void> ensureCollectionExistsAndIsAddedToGraph({
+    required List<ArangoDocumentCollection> fromCollections,
+    required List<ArangoDocumentCollection> toCollections,
+  }) async {
     if (await doesCollectionExist()) return;
 
     await graph.ensureExists();
     await rawCollection.ensureExists();
     try {
+      final definition = ArangoEdgeDefinition(
+        collection: this,
+        fromCollections: fromCollections,
+        toCollections: toCollections,
+      );
       await addCollectionToGraph(definition);
     } on ArangoError catch (e) {
       const graphInternalEdgeCollectionAlreadySet = 1942;
