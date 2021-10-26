@@ -142,7 +142,7 @@ class ArangoEdgeDefinition {
     required this.toCollections,
   });
 
-  final ArangoGraphVertexCollection collection;
+  final ArangoGraphEdgeCollection collection;
   final List<ArangoDocumentCollection> fromCollections;
   final List<ArangoDocumentCollection> toCollections;
 
