@@ -226,7 +226,7 @@ class ArangoGraphEdgeCollection extends ArangoGraphCollection {
 
     final response = await _connection.request(
       method: 'POST',
-      path: '/_api/gharial/$name/edge',
+      path: '/_api/gharial/${graph.name}/edge',
       body: definition.toJson(),
     );
     return response.body;
