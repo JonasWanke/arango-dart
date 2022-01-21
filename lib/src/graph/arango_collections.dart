@@ -47,21 +47,30 @@ abstract class ArangoGraphCollection {
     return response.body;
   }
 
-  Future<Map<String, dynamic>> get(
+  String get _getRequestResultFieldName;
+  Future<Map<String, dynamic>?> get(
     String key, {
     String? rev,
     String? ifMatch,
     String? ifNoneMatch,
   }) async {
-    final response = await _connection.request(
-      path: '$_basePath/$key',
-      queries: {if (rev != null) 'rev': rev},
-      headers: {
-        if (ifMatch != null) 'If-Match': ifMatch,
-        if (ifNoneMatch != null) 'If-None-Match': ifNoneMatch,
-      },
-    );
-    return response.body['vertex'] as Map<String, dynamic>;
+    try {
+      final response = await _connection.request(
+        path: '$_basePath/$key',
+        queries: {if (rev != null) 'rev': rev},
+        headers: {
+          if (ifMatch != null) 'If-Match': ifMatch,
+          if (ifNoneMatch != null) 'If-None-Match': ifNoneMatch,
+        },
+      );
+      return response.body[_getRequestResultFieldName] as Map<String, dynamic>;
+    } on ArangoError catch (e) {
+      const documentNotFound = 1202;
+      if (e.errorNum == documentNotFound) {
+        return null;
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> update(
@@ -159,6 +168,9 @@ class ArangoGraphVertexCollection extends ArangoGraphCollection {
   ArangoDocumentCollection get rawCollection =>
       ArangoDocumentCollection(name, _connection);
 
+  @override
+  String get _getRequestResultFieldName => 'vertex';
+
   Future<bool> doesCollectionExist() async {
     if (!(await graph.doesExist())) return false;
     return (await graph.listVertexCollections()).contains(this);
@@ -184,9 +196,8 @@ class ArangoGraphVertexCollection extends ArangoGraphCollection {
       const graphCollectionUsedInOrphans = 1938;
       if (e.errorNum == graphCollectionUsedInOrphans) {
         return;
-      } else {
-        rethrow;
       }
+      rethrow;
     }
   }
 
@@ -213,6 +224,9 @@ class ArangoGraphEdgeCollection extends ArangoGraphCollection {
 
   ArangoEdgeCollection get rawCollection =>
       ArangoEdgeCollection(name, _connection);
+
+  @override
+  String get _getRequestResultFieldName => 'edge';
 
   Future<bool> doesCollectionExist() async {
     if (!(await graph.doesExist())) return false;
@@ -251,9 +265,8 @@ class ArangoGraphEdgeCollection extends ArangoGraphCollection {
       const graphInternalEdgeCollectionAlreadySet = 1942;
       if (e.errorNum == graphInternalEdgeCollectionAlreadySet) {
         return;
-      } else {
-        rethrow;
       }
+      rethrow;
     }
   }
 
